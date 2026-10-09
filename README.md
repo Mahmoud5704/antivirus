@@ -4,35 +4,30 @@ A lightweight antivirus system written in Bash. A daemon watches a directory for
 
 ## Folder structure
 ```
-├── antivirusd.sh        # the daemon — watches a directory and quarantines malicious files
-├── restore.sh           # the restore tool — lets you review and manage quarantined files
-├── antivirus-cron.sh    # cron version — runs one scan pass per invocation instead of looping
-├── Makefile             # shortcuts to run everything
-├── original/            # the directory being monitored (you create this)
-│   └── whitelist.txt    # auto-created when you first restore a file
-├── restore/             # quarantine folder — created automatically by make
-├── directory-info.last  # saved snapshot of the directory (created at runtime)
-└── directory-info.new   # current snapshot used for comparison (created at runtime)
+antivirusd.sh        # the daemon — watches a directory and quarantines malicious files
+restore.sh           # the restore tool — lets you review and manage quarantined files
+antivirus-cron.sh    # cron version — runs one scan pass per invocation instead of looping
+Makefile             # shortcuts to run everything
+original/            # the directory being monitored (contain files only)
+  -- whitelist.txt   # creeated when you first file restored
+restore/             # the directory copied to it malicious files and can restore them from it(contain files only)
+directory-info.last  # saved snapshot of the directory (created at runtime)
+directory-info.new   # current snapshot used for comparison (created at runtime)
 ```
-
-`original/` and `restore/` hold files only — no subdirectories inside them.
+.
 
 ## Prerequisites
-Everything needed is standard on Ubuntu. The only thing you may need to install is `make`:
-
+as I use Ubuntu,ensure only the following:-
+1. install `make`:
 ```bash
 sudo apt update && sudo apt install -y make
 ```
-
-For the cron bonus, also install and start cron if it is not already running:
-
+2. For the cron bonus, install and start cron:
 ```bash
 sudo apt install -y cron
 sudo systemctl enable --now cron
 ```
-
-Before running anything, make the scripts executable:
-
+3. make the scripts executable:
 ```bash
 chmod +x filename.sh
 ```
@@ -47,29 +42,24 @@ mkdir -p original
 ```bash
 make
 ```
-This creates the `restore/` quarantine folder if it does not exist, then starts the daemon watching `original/` with a 2-second check interval.
-You can also run it directly with different arguments:
+This starts the daemon watching `original/` with a 2-second check interval.
+You can also run it directly with parametersyou prefer:
 ```bash
 ./antivirusd.sh <dir> <malicious_dir> <interval-secs>
 # example
 ./antivirusd.sh original restore 5
 ```
 
-**What happens when you run it:**
-1. On the very first run it immediately scans everything already in the directory.
-2. Every `<interval-secs>` seconds it checks whether anything changed.
-3. If nothing changed, it waits and checks again.
-4. If something changed, it scans the directory and quarantines any malicious files it finds.
-5. For each quarantined file it prints: `<file> is malicious and it is DELETED`
-Stop the daemon with `Ctrl+C`.
-To test it, drop a file into `original/` from another terminal while the daemon is running:
-```bash
-echo "virus" > original/test.txt
-touch original/payload.exe
-```
+What happens when you run it:
+- first run it immediately scans everything already in the directory.
+- Every `<interval-secs>` seconds it checks whether anything changed.
+- If nothing changed, it waits and checks again.
+- If something changed, it scans the directory and quarantines any malicious files it finds.
+- For each quarantined file it prints: `<file> is malicious and it is DELETED`
+- to Stop the daemon -> `Ctrl+C`.
 
-### 3. Review the quarantine (restore tool)
-> Do **not** run this at the same time as the daemon.
+
+### 3. Review the quarantine (restore)
 ```bash
 make restore
 ```
@@ -93,11 +83,11 @@ For file2.bat:
 Restored file2.bat to original.
 ```
 
-| Option | Action | Message logged |
-| `1` | Copy the file back to `dir`, add to whitelist | `Restored <file> to <dir>.` |
-| `2` | Permanently delete from quarantine | `<file> permanently deleted.` |
-| `3` | Leave it and go back to the list | — |
-If the quarantine folder is empty, the tool prints `No malicious files to review.` and exits.
+Options
+`1` Copy the file back to `dir` + add to whitelist 
+`2` Permanently delete it.
+`3` Leave it and go back to the list
+ If the quarantine folder is empty, it prints `No malicious files to review.` and exits.
 
 
 ## Where the flagged lists are defined
