@@ -61,16 +61,15 @@ What happens when you run it?
 - to Stop the daemon -> `Ctrl+C`.
 
 How detect a malicious file in detail?
-In `scan_files()` function in `antivirusd.sh` (and also in `antivirus-cron.sh`):
 1. extensions: `.exe`, `.bat`, `.vbs`, `.scr`, `.ps1`:-
    look for `[ "$extension" = "exe" ] || ...` comparisons in the `if` block, detect any malicious extension.
 2. keywords: `virus`, `trojan`, `malware`, `worm`, `ransomware`:-
    Look for the `grep -Eci "virus|trojan|malware|worm|ransomware"`, detect any malicious content.
-4-symbols used in grep `-Eoi`:- 
+3. symbols used in grep `-Eoi`:- 
    -E (Extended regex): Search using patterns(grep -E "cat|dog" file.txt), so he will search for cat and dog separately 
    -o (Count): Count the matching words
    -i (Ignore case): Find the word regardless of uppercase or lowercase.
-3- but if the file was restored after flagged so we skip it (see bouns 2 --- whitelist)
+4. but if the file was restored after flagged so we skip it (see bouns 2 --- whitelist)
 
 
 ### 3. Run Restore steps
@@ -96,7 +95,6 @@ For file2.bat:
 > 1
 Restored file2.bat to original.
 ```
-
 Options:
 - `1` -> Copy the file back to `dir` + add to whitelist.
 - `2` -> Permanently delete it.
@@ -110,7 +108,7 @@ If the quarantine folder is empty, it prints `No malicious files to review.` and
 ./antivirus-cron.sh <dir> <malicious_dir>
 ```
 note: Cron does not start in your project directory, so relative paths will not work.
-### Step-by-step cron setup
+### Run cron
 1. Go to your project folder and note the absolute path:
 2. Open your crontab:
    ```bash
@@ -122,17 +120,16 @@ note: Cron does not start in your project directory, so relative paths will not 
    ```
    - `* * * * *` — runs the job every minute.
    - `sleep 23` — delays execution to **second 23** of each minute. 
-   - `cd /path/to/project` — relative paths.
    - `>> cron.log 2>&1` — saves all output to a log file.
-5. Save and exit. Verify the line is registered:
+4. Save and exit. Verify the line is registered:
    ```bash
    crontab -l
    ```
-6. to see thevrun:
+5. to see thevrun:
    ```bash
    tail -f /path/to/project/cron.log
    ```
-7. To stop the job, run `crontab -e` and delete the line.
+6. To stop the job, run `crontab -e` and delete the line.
 
 ### Cron expression: every 3rd Friday of the month at 12:31 AM
 ```
@@ -149,8 +146,8 @@ If a restored file still matches a flagged extension or keyword, it would be qua
 the whitelist is a plain text, it survives the daemon being stopped and restarted.
 1. add file: choosing option `1` in the restore -> copies the file back to `<dir>`, computes `sha256sum`, builds the key `<hash><extension>` and appends that key as one line to `<dir>/whitelist.txt`.
 2. How the daemon checks it: `scan_files()` runs:
-```bash
-grep -Fqx "$result" "$original/whitelist.txt" 2>/dev/null
-```
-If the key matches, the file is skipped and never quarantined.
+  ```bash
+  grep -Fqx "$result" "$original/whitelist.txt" 2>/dev/null
+  ```
+  If the key matches, the file is skipped and never quarantined.
 
