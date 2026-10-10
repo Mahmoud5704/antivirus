@@ -22,15 +22,17 @@ as I use Ubuntu,ensure only the following:-
 ```bash
 sudo apt update && sudo apt install -y make
 ```
-2. For the cron bonus, install and start cron:
-```bash
-sudo apt install -y cron
-sudo systemctl enable --now cron
-```
-3. make the scripts executable:
+2. make the scripts executable:
 ```bash
 chmod +x filename.sh
 ```
+3. `cron` is installed and running:
+   ```bash
+   sudo apt install -y cron
+   sudo systemctl enable --now cron
+   systemctl status cron   # should say "active (running)"
+   ```
+4. also for all -> dir and malicious dir must be exist
 
 ## How to run
 ### 1. Create the monitored directory
@@ -76,7 +78,7 @@ Choose a file:
 2: file2.bat
 > 2
 For file2.bat:
-1: Restore this file back into dir (it was a false positive)
+1: Restore this file back into dir (also to the whitelist->;see bouns2)
 2: Permanently delete this file from malicious_dir (it was genuinely malicious)
 3: Go back
 > 1
@@ -90,60 +92,48 @@ Options
  If the quarantine folder is empty, it prints `No malicious files to review.` and exits.
 
 
-## Where the flagged lists are defined
-Both lists live inside the `scan_files()` function in `antivirusd.sh` (and are duplicated in `antivirus-cron.sh`):
-- **Flagged extensions** — `.exe`, `.bat`, `.vbs`, `.scr`, `.ps1`  
-  Look for the chain of `[ "$extension" = "exe" ] || ...` comparisons in the `if` block at the bottom of `scan_files()`.
-- **Flagged keywords** — `virus`, `trojan`, `malware`, `worm`, `ransomware`  
-  Look for the `grep -Eci "virus|trojan|malware|worm|ransomware"` line just above that `if`.
-A file is quarantined if it matches **either** rule. Keywords match anywhere inside the file contents, including inside longer words (e.g. a file containing `wormhole` is flagged), and the match is case-insensitive. Only the final extension is checked — `file.txt.scr` is flagged but `file.scr.txt` is not.
-
----
+## How detect a malicious file in detail?
+In `scan_files()` function in `antivirusd.sh` (also in `antivirus-cron.sh`):
+1. extensions: `.exe`, `.bat`, `.vbs`, `.scr`, `.ps1`:-
+   look for `[ "$extension" = "exe" ] || ...` comparisons in the `if` block, detect any malicious extension.
+2. keywords: `virus`, `trojan`, `malware`, `worm`, `ransomware`:-
+   Look for the `grep -Eci "virus|trojan|malware|worm|ransomware"`, detect any malicious content.
+4-symbols used in grep `-Eoi`:- 
+   -E (Extended regex): Search using patterns(grep -E "cat|dog" file.txt), so he will search for cat and dog separately 
+   -o (Count): Count the matching words
+   -i (Ignore case): Find the word regardless of uppercase or lowercase.
+3- but if the file was restored after flagged so we skip it (see bouns 2 --- whitelist)
+   
 
 ## Bonus 1 — Cron job
 `antivirus-cron.sh` performs one scan pass and exits, making it suitable for scheduling with cron.
 ```bash
 ./antivirus-cron.sh <dir> <malicious_dir>
 ```
-
-### Prerequisites before setting up the cron job
-1. `cron` is installed and running:
-   ```bash
-   sudo apt install -y cron
-   sudo systemctl enable --now cron
-   systemctl status cron   # should say "active (running)"
-   ```
-2. Scripts are executable (`chmod +x antivirus-cron.sh`).
-3. Both `<dir>` and `<malicious_dir>` directories exist.
-4. You know the **absolute path** of the project folder (run `pwd` inside it). Cron does not start in your project directory, so relative paths will not work.
-
+note: Cron does not start in your project directory, so relative paths will not work.
 ### Step-by-step cron setup
 1. Go to your project folder and note the absolute path:
-   ```bash
-   cd /path/to/project && pwd
-   ```
 2. Open your crontab:
    ```bash
    crontab -e
    ```   
-4. Add this line, replacing `/path/to/project` with your actual path:
+3. Add this line, replacing `/path/to/project` with your actual path:
    ```
    * * * * * cd /path/to/project && sleep 23 && ./antivirus-cron.sh original restore >> /path/to/project/cron.log 2>&1
    ```
    - `* * * * *` — runs the job every minute.
    - `sleep 23` — delays execution to **second 23** of each minute. 
-   - `cd /path/to/project` — makes relative paths like `original/` and `restore/` resolve correctly.
-   - `>> cron.log 2>&1` — saves all output to a log file since there is no terminal.
+   - `cd /path/to/project` — relative paths.
+   - `>> cron.log 2>&1` — saves all output to a log file.
 5. Save and exit. Verify the line is registered:
    ```bash
    crontab -l
    ```
-6. Watch it run:
+6. to see thevrun:
    ```bash
    tail -f /path/to/project/cron.log
    ```
 7. To stop the job, run `crontab -e` and delete the line.
-> Do not run the cron job and `antivirusd.sh` on the same directories at the same time.
 
 ### Cron expression: every 3rd Friday of the month at 12:31 AM
 ```
