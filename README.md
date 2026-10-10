@@ -19,13 +19,13 @@ directory-info.new   # current snapshot used for comparison (created at runtime)
 ## Prerequisites
 as I use Ubuntu,ensure only the following:-
 1. install `make`:
-```bash
-sudo apt update && sudo apt install -y make
-```
+  ```bash
+  sudo apt update && sudo apt install -y make
+  ```
 2. make the scripts executable:
-```bash
-chmod +x filename.sh
-```
+  ```bash
+  chmod +x filename.sh
+  ```
 3. `cron` is installed and running:
    ```bash
    sudo apt install -y cron
@@ -40,7 +40,7 @@ chmod +x filename.sh
 mkdir -p original
 ```
 
-### 2. Start the antivirus daemon
+### 2. Run antivirus steps
 ```bash
 make
 ```
@@ -52,7 +52,7 @@ You can also run it directly with parametersyou prefer:
 ./antivirusd.sh original restore 5
 ```
 
-What happens when you run it:
+What happens when you run it?
 - first run it immediately scans everything already in the directory.
 - Every `<interval-secs>` seconds it checks whether anything changed.
 - If nothing changed, it waits and checks again.
@@ -60,8 +60,20 @@ What happens when you run it:
 - For each quarantined file it prints: `<file> is malicious and it is DELETED`
 - to Stop the daemon -> `Ctrl+C`.
 
+How detect a malicious file in detail?
+In `scan_files()` function in `antivirusd.sh` (and also in `antivirus-cron.sh`):
+1. extensions: `.exe`, `.bat`, `.vbs`, `.scr`, `.ps1`:-
+   look for `[ "$extension" = "exe" ] || ...` comparisons in the `if` block, detect any malicious extension.
+2. keywords: `virus`, `trojan`, `malware`, `worm`, `ransomware`:-
+   Look for the `grep -Eci "virus|trojan|malware|worm|ransomware"`, detect any malicious content.
+4-symbols used in grep `-Eoi`:- 
+   -E (Extended regex): Search using patterns(grep -E "cat|dog" file.txt), so he will search for cat and dog separately 
+   -o (Count): Count the matching words
+   -i (Ignore case): Find the word regardless of uppercase or lowercase.
+3- but if the file was restored after flagged so we skip it (see bouns 2 --- whitelist)
 
-### 3. Review the quarantine (restore)
+
+### 3. Run Restore steps
 ```bash
 make restore
 ```
@@ -85,25 +97,12 @@ For file2.bat:
 Restored file2.bat to original.
 ```
 
-Options
-`1` Copy the file back to `dir` + add to whitelist 
-`2` Permanently delete it.
-`3` Leave it and go back to the list
- If the quarantine folder is empty, it prints `No malicious files to review.` and exits.
+Options:
+- `1` -> Copy the file back to `dir` + add to whitelist.
+- `2` -> Permanently delete it.
+- `3` -> Leave it and go back to the list.
+If the quarantine folder is empty, it prints `No malicious files to review.` and exits.
 
-
-## How detect a malicious file in detail?
-In `scan_files()` function in `antivirusd.sh` (also in `antivirus-cron.sh`):
-1. extensions: `.exe`, `.bat`, `.vbs`, `.scr`, `.ps1`:-
-   look for `[ "$extension" = "exe" ] || ...` comparisons in the `if` block, detect any malicious extension.
-2. keywords: `virus`, `trojan`, `malware`, `worm`, `ransomware`:-
-   Look for the `grep -Eci "virus|trojan|malware|worm|ransomware"`, detect any malicious content.
-4-symbols used in grep `-Eoi`:- 
-   -E (Extended regex): Search using patterns(grep -E "cat|dog" file.txt), so he will search for cat and dog separately 
-   -o (Count): Count the matching words
-   -i (Ignore case): Find the word regardless of uppercase or lowercase.
-3- but if the file was restored after flagged so we skip it (see bouns 2 --- whitelist)
-   
 
 ## Bonus 1 — Cron job
 `antivirus-cron.sh` performs one scan pass and exits, making it suitable for scheduling with cron.
