@@ -132,14 +132,17 @@ note: Cron does not start in your project directory, so relative paths will not 
 6. To stop the job, run `crontab -e` and delete the line.
 
 ### Cron expression: every 3rd Friday of the month at 12:31 AM
-```
-31 0 15-21 * * [ "$(date +\%u)" = 5 ] && /path/to/project/antivirus-cron.sh /path/to/project/original /path/to/project/restore
-```
-- `31 0` — minute 31 of hour 0 = 12:31 AM.
-- `15-21` — the 3rd Friday of any month always falls between the 15th and the 21st.
-- Cron treats day-of-month and day-of-week fields as OR, not AND, so `5` in the weekday field would run on every Friday. Instead the command itself checks `date +%u` (1=Monday … 5=Friday) and only proceeds when it is a Friday.
+cron field order is: `minute  hour  day-of-month  month  day-of-week  command` (note:Cron treats day-of-month and day-of-week fields as OR, not AND)
+- 12:31 AM = hour 0, minute 31
+- 3rd friday = 15-21 of month
+- don't care about4th and 5th field
+- Cron treats day-of-month and day-of-week fields as OR, not AND, so `5` in the weekday field would run on every Friday, Instead checks `date +%u` and only
+  proceeds when it is a Friday(note: `date` return 5 if friday)
 - `\%` escapes `%` because cron treats a bare `%` as a newline.
-
+SO FINAL EXP:
+  ```bash
+  31 0 15-21 * * [ "$(date +\%u)" = 5 ] && /path/to/project/antivirus-cron.sh /path/to/project/original /path/to/project/restore
+  ```
 
 ## Bonus 2 — Whitelist
 If a restored file still matches a flagged extension or keyword, it would be quarantined again on the next scan, but whitelist prevents this.
