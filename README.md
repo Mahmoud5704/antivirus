@@ -121,13 +121,13 @@ note: Cron does not start in your project directory, so relative paths will not 
    - `* * * * *` — runs the job every minute.
    - `sleep 23` — delays execution to **second 23** of each minute. 
    - `>> cron.log 2>&1` — saves all output to a log file.
-4. Save and exit. Verify the line is registered:
+4. Save and exit. Verify what you modify with this command:
    ```bash
    crontab -l
    ```
-5. to see thevrun:
+5. to see the run logs:
    ```bash
-   tail -f /path/to/project/cron.log
+   cat cron.log
    ```
 6. To stop the job, run `crontab -e` and delete the line.
 
