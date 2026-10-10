@@ -65,9 +65,9 @@ How detect a malicious file in detail?
    look for `[ "$extension" = "exe" ] || ...` comparisons in the `if` block, detect any malicious extension.
 2. keywords: `virus`, `trojan`, `malware`, `worm`, `ransomware`:-
    Look for the `grep -Eci "virus|trojan|malware|worm|ransomware"`, detect any malicious content.
-3. symbols used in grep `-Eoi`:- 
+3. symbols used in grep `-ECi`:- 
    -E (Extended regex): Search using patterns(grep -E "cat|dog" file.txt), so he will search for cat and dog separately 
-   -o (Count): Count the matching words
+   -c (Count): Count the lines has contain any word of them.
    -i (Ignore case): Find the word regardless of uppercase or lowercase.
 4. but if the file was restored after flagged so we skip it (see bouns 2 --- whitelist)
 
@@ -152,5 +152,9 @@ the whitelist is a plain text, it survives the daemon being stopped and restarte
   ```bash
   grep -Fqx "$result" "$original/whitelist.txt" 2>/dev/null
   ```
+symbols used in grep `-ECi`:- 
+    -F = Fixed string — treat the pattern as a literal string, not a regex, but anywhere inside the content (substring)
+    -q = Quiet — print nothing, just set the exit code (0 = found, 1 = not found).
+    -x = Exact line — the pattern must match the whole line, not just part of it.
   If the key matches, the file is skipped and never quarantined.
 
