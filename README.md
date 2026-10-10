@@ -4,17 +4,16 @@ A lightweight antivirus system written in Bash. A daemon watches a directory for
 
 ## Folder structure
 ```
-antivirusd.sh        # the daemon — watches a directory and quarantines malicious files
-restore.sh           # the restore tool — lets you review and manage quarantined files
-antivirus-cron.sh    # cron version — runs one scan pass per invocation instead of looping
+antivirusd.sh        # watches a directory and quarantines malicious files
+antivirus-cron.sh    #runs one scan pass per invocation instead of looping
+restore.sh           # review and manage quarantined files
 Makefile             # shortcuts to run everything
-original/            # the directory being monitored (contain files only)
-  -- whitelist.txt   # creeated when you first file restored
-restore/             # the directory copied to it malicious files and can restore them from it(contain files only)
+dir/                 # the source directory being monitored (files only, no subdirectories)
+  -- whitelist.txt   # creeated when you first file restored,if file restored (can't be flagged again)
+malicious_dir/       #  the destination directory where flagged/quarantined files are copied 
 directory-info.last  # saved snapshot of the directory (created at runtime)
 directory-info.new   # current snapshot used for comparison (created at runtime)
 ```
-.
 
 ## Prerequisites
 as I use Ubuntu,ensure only the following:-
@@ -37,7 +36,7 @@ as I use Ubuntu,ensure only the following:-
 ## How to run
 ### 1. Create the monitored directory
 ```bash
-mkdir -p original
+mkdir -p dir
 ```
 
 ### 2. Run antivirus steps
@@ -49,7 +48,7 @@ You can also run it directly with parametersyou prefer:
 ```bash
 ./antivirusd.sh <dir> <malicious_dir> <interval-secs>
 # example
-./antivirusd.sh original restore 5
+./antivirusd.sh dir malicious_dir 5
 ```
 
 What happens when you run it?
@@ -79,8 +78,6 @@ make restore
 Or directly:
 ```bash
 ./restore.sh <dir> <malicious_dir>
-# example
-./restore.sh original restore
 ```
 The tool shows a numbered list of quarantined files and asks you to pick one. For example:
 ```
@@ -141,7 +138,7 @@ cron field order is: `minute  hour  day-of-month  month  day-of-week  command` (
 - `\%` escapes `%` because cron treats a bare `%` as a newline.
 SO FINAL EXP:
   ```bash
-  31 0 15-21 * * [ "$(date +\%u)" = 5 ] && /path/to/project/antivirus-cron.sh /path/to/project/original /path/to/project/restore
+  31 0 15-21 * * [ "$(date +\%u)" = 5 ] && /path/antivirus-cron.sh /path/dir /path/malicious_dir
   ```
 
 ## Bonus 2 — Whitelist
@@ -150,7 +147,7 @@ the whitelist is a plain text, it survives the daemon being stopped and restarte
 1. add file: choosing option `1` in the restore -> copies the file back to `<dir>`, computes `sha256sum`, builds the key `<hash><extension>` and appends that key as one line to `<dir>/whitelist.txt`.
 2. How the daemon checks it: `scan_files()` runs:
   ```bash
-  grep -Fqx "$result" "$original/whitelist.txt" 2>/dev/null
+  grep -Fqx "$result" "$dir/whitelist.txt" 2>/dev/null
   ```
 symbols used in grep `-ECi`:- 
     -F = Fixed string — treat the pattern as a literal string, not a regex, but anywhere inside the content (substring)
